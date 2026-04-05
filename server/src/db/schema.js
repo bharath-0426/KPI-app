@@ -226,8 +226,10 @@ function runMigrations() {
   }
 
   // M2) Insert daily, fortnightly, semi_annual frequencies and renumber hierarchy_order
-  const hasDaily = db.prepare("SELECT id FROM frequency_configs WHERE key='daily'").get();
-  if (!hasDaily) {
+  // Guard: frequency_configs table is created in migration H — skip on fresh databases
+  const fcTableExists = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='frequency_configs'").get();
+  const hasDaily = fcTableExists ? db.prepare("SELECT id FROM frequency_configs WHERE key='daily'").get() : null;
+  if (fcTableExists && !hasDaily) {
     console.log('[migrate] Adding daily/fortnightly/semi_annual frequencies…');
     // Renumber existing built-ins to make room: weekly→2, monthly→4, quarterly→5, yearly→7
     for (const [key, order] of [['weekly',2],['monthly',4],['quarterly',5],['yearly',7]]) {
@@ -458,10 +460,13 @@ function runMigrations() {
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   for (const f of [
-    ['weekly',    'Weekly',    1, 1, 1, 'week',    1, 1, 'average'],
-    ['monthly',   'Monthly',   2, 1, 2, 'month',   1, 1, 'average'],
-    ['quarterly', 'Quarterly', 3, 1, 3, 'quarter', 1, 1, 'average'],
-    ['yearly',    'Yearly',    4, 1, 4, 'year',    1, 1, 'average'],
+    ['daily',       'Daily',       1, 1, 1, 'day',     1, 1, 'average'],
+    ['weekly',      'Weekly',      2, 1, 2, 'week',    1, 1, 'average'],
+    ['fortnightly', 'Fortnightly', 3, 1, 3, 'week',    2, 1, 'average'],
+    ['monthly',     'Monthly',     4, 1, 4, 'month',   1, 1, 'average'],
+    ['quarterly',   'Quarterly',   5, 1, 5, 'quarter', 1, 1, 'average'],
+    ['semi_annual', 'Semi Annual', 6, 1, 6, 'month',   6, 1, 'average'],
+    ['yearly',      'Yearly',      7, 1, 7, 'year',    1, 1, 'average'],
   ]) fcInsert.run(...f);
   // Backfill hierarchy_order for existing built-ins that have 0
   for (const [key, order] of [['weekly',1],['monthly',2],['quarterly',3],['yearly',4]]) {
