@@ -150,7 +150,7 @@ function initSchema() {
   `);
   db.exec(`CREATE INDEX IF NOT EXISTS idx_score_history_score ON kpi_score_history(kpi_score_id)`);
 
-  // Performance indexes
+  // Performance indexes (only for tables created in initSchema)
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_kpi_scores_employee_period
       ON kpi_scores (employee_id, scoring_period_id);
@@ -158,10 +158,6 @@ function initSchema() {
       ON kpi_scores (kpi_template_id);
     CREATE INDEX IF NOT EXISTS idx_kpi_scores_status
       ON kpi_scores (status);
-    CREATE INDEX IF NOT EXISTS idx_kpi_template_assignments_template
-      ON kpi_template_assignments (template_id);
-    CREATE INDEX IF NOT EXISTS idx_kpi_template_scored_by_role
-      ON kpi_template_scored_by (role_id);
     CREATE INDEX IF NOT EXISTS idx_employees_role
       ON employees (role_id);
     CREATE INDEX IF NOT EXISTS idx_employees_reports_to
@@ -170,10 +166,6 @@ function initSchema() {
       ON scoring_periods (is_active);
     CREATE INDEX IF NOT EXISTS idx_rdi_recipient
       ON rupee_distribution_items (recipient_id);
-    CREATE INDEX IF NOT EXISTS idx_kta_role
-      ON kpi_template_assignments (role_id);
-    CREATE INDEX IF NOT EXISTS idx_kta_dept
-      ON kpi_template_assignments (dept_id);
     CREATE INDEX IF NOT EXISTS idx_kpi_scores_period
       ON kpi_scores (scoring_period_id);
   `);
@@ -311,6 +303,18 @@ function runMigrations() {
       role_id INTEGER REFERENCES roles(id) ON DELETE CASCADE,
       dept_id INTEGER REFERENCES departments(id) ON DELETE CASCADE
     )
+  `);
+
+  // Indexes for migration-created tables
+  db.exec(`
+    CREATE INDEX IF NOT EXISTS idx_kpi_template_assignments_template
+      ON kpi_template_assignments (template_id);
+    CREATE INDEX IF NOT EXISTS idx_kpi_template_scored_by_role
+      ON kpi_template_scored_by (role_id);
+    CREATE INDEX IF NOT EXISTS idx_kta_role
+      ON kpi_template_assignments (role_id);
+    CREATE INDEX IF NOT EXISTS idx_kta_dept
+      ON kpi_template_assignments (dept_id);
   `);
 
   // C) Migrate existing kpi_templates.role_id → assignments (run once)
