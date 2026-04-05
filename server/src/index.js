@@ -7,6 +7,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const { initSchema, runMigrations } = require('./db/schema');
+const { seed } = require('./db/seed');
 const { attachEmployee } = require('./middleware/auth');
 
 // Routes
@@ -46,6 +47,7 @@ if (!IS_BUILT) {
     credentials: true,
   }));
 }
+app.set('trust proxy', 1);
 app.use(express.json());
 
 // Session store using better-sqlite3 (no native sqlite3 needed)
@@ -60,7 +62,7 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     httpOnly: true,
-    secure: false,          // must be false for localhost (no HTTPS)
+    secure: IS_PROD,        // true on Render (HTTPS), false on localhost
     sameSite: 'strict',
     maxAge: 1000 * 60 * 60 * 8, // 8 hours
   },
@@ -109,6 +111,14 @@ if (IS_BUILT) {
 // ── Start ─────────────────────────────────────────────────────────────────────
 initSchema();
 runMigrations();
+
+// Auto-seed with dummy data if DB is empty (e.g. fresh Render deploy)
+const { db: dbCheck } = require('./db/schema');
+const hasData = dbCheck.prepare('SELECT COUNT(*) as n FROM employees').get().n > 0;
+if (!hasData) {
+  console.log('[startup] Empty database detected — seeding with demo data…');
+  seed();
+}
 const server = app.listen(PORT, () => {
   console.log(`KPI server running on http://localhost:${PORT}`);
 });

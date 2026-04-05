@@ -614,4 +614,8 @@ function seed() {
   run();
 }
 
-seed();
+if (require.main === module) {
+  seed();
+}
+
+module.exports = { seed };
