@@ -1,0 +1,6 @@
+node_modules/
+node/
+server/data/
+client/dist/
+.env
+.claude/
