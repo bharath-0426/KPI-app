@@ -42,9 +42,9 @@ function seed() {
       { name: 'Team Member',         hierarchy_level: 4 },
     ];
     const insertRole = db.prepare(`
-      INSERT OR IGNORE INTO roles (name, department_id, hierarchy_level) VALUES (?, ?, ?)
+      INSERT OR IGNORE INTO roles (name, hierarchy_level) VALUES (?, ?)
     `);
-    for (const r of roles) insertRole.run(r.name, deptId, r.hierarchy_level);
+    for (const r of roles) insertRole.run(r.name, r.hierarchy_level);
 
     const roleMap = {};
     db.prepare('SELECT id, name FROM roles').all()
